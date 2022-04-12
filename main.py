@@ -1,4 +1,6 @@
 import os
+import time
+
 from mtcnn import MTCNN
 import numpy as np
 import cv2
@@ -56,7 +58,7 @@ def get_face_embeddings(face_image):
 
 def load_saved_user():
   """
-  Load the images from database.
+  Load images from database.
   """
   # Create empty list to store the embeddings of the face in the database and the name
   saved_faces = []
@@ -123,7 +125,7 @@ def verify(target_image, threshold=10):
           # If distance lower than threshold, the input images would be considered similar
           if dist < threshold:
             # Display the face recognition result
-            print('detected_face in verify()', detected_face)
+            print('detected_face', detected_face)
             x1, y1, x2, y2 = get_xy(detected_face['box'])
             # Draw the bounding box and keypoints on the image
             target_image = mark_face(detected_face, target_image, x1, x2, y1, y2)
@@ -135,7 +137,7 @@ def verify(target_image, threshold=10):
 
 def webcam_predict(threshold=10):
     """
-    Capture from webcam and predict.
+    Capture from webcam and perform face verification.
     """
     # open webcame and perform face recognition
     camera = cv2.VideoCapture(0)
@@ -160,22 +162,104 @@ def webcam_predict(threshold=10):
     camera.release()
     cv2.destroyAllWindows()
 
-# Set paths
-weight_path = 'facenet_keras_weights.h5'
-face_database_path = 'database'
-test_folder = 'test'
+def image_predict(image_path, THRESHOLD):
+  """
+  Perform face verification on .JPG files.
+  """
+  # Read image
+  image = cv2.imread(image_path)
+  # Convert RGB to BGR
+  image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+  # Perform face verification
+  drawn_image = verify(image, THRESHOLD)
+  # Revert image back to RGB for display
+  display_image = cv2.cvtColor(drawn_image, cv2.COLOR_BGR2RGB)
+  # Display
+  cv2.imshow("Face Verification", display_image)
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
 
-# Global variables for color and thickness of the rectangles and keypoints we will draw on the image
-THRESHOLD = 10
-COLOR = (0, 255, 0)
-THICKNESS = 2
+def video_predict(video_path, THRESHOLD):
+  """
+  Perform face verification on .MP4 files.
+  """
+  # Capture the video
+  cap = cv2.VideoCapture(video_path)
 
-# Initialize model
-face_detector = MTCNN()
-model = InceptionResNetV2()
-model.load_weights(weight_path)
+  # If can't capture video
+  if (cap.isOpened() == False):
+    print(f"[ERROR] Unable to open {video_path}")
+    return
+  
+  # Otherwise read the image
+  (success, image) = cap.read()
+  startTime = 0
 
-# Capture from webcam and predict
-webcam_predict(THRESHOLD)
+  while success:
+    currentTime = time.time()
+    fps = 1/(currentTime - startTime)
+    startTime = currentTime
 
+    # Convert RGB to BGR
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    # Perform face verification
+    drawn_image = verify(image, THRESHOLD)
+    # Revert image back to RGB for display
+    display_image = cv2.cvtColor(drawn_image, cv2.COLOR_BGR2RGB)
+
+    # put fps text on the image
+    cv2.putText(display_image, "FPS: " + str(int(fps)), (20,70), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
+
+    # Show the video frame
+    cv2.imshow("Face Verification", display_image)
+
+    # Define keypress
+    key = cv2.waitKey(1) & 0xFF
+    
+    # Pressing 'q' on the keyboard will break the loop
+    if key == ord('q'):
+      break
+
+    # Otherwise, capture next frame
+    (success, image) = cap.read()
+  # Release everything if job is finished
+  cap.release()
+  cv2.destroyAllWindows()
+
+def media_predict(test_folder, THRESHOLD):
+  """
+  Perform face verification on .JPG and .MP4 media files in test folder.
+  """
+  filenames = next(os.walk(test_folder), (None, None, []))[2]
+  for f in filenames:
+    extension = f.split('.')[1]
+    if extension == 'jpg':
+      image_predict(os.path.join(test_folder, f), THRESHOLD)
+
+    if extension == 'mp4':
+      video_predict(os.path.join(test_folder, f), THRESHOLD)
+
+
+if __name__ == "main":
+  
+  # Set paths
+  weight_path = 'facenet_keras_weights.h5'
+  face_database_path = 'database'
+  test_folder = 'test'
+
+  # Global variables for color and thickness of the rectangles and keypoints that will be drawn on the image
+  THRESHOLD = 10
+  COLOR = (0, 255, 0)
+  THICKNESS = 2
+
+  # Initialize model and load weights
+  face_detector = MTCNN()
+  model = InceptionResNetV2()
+  model.load_weights(weight_path)
+
+  # Capture from webcam and predict
+  webcam_predict(THRESHOLD)
+
+  # Predict from test folder
+  media_predict(test_folder, THRESHOLD)
 
