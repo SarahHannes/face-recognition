@@ -241,11 +241,6 @@ def media_predict(test_folder, THRESHOLD):
     if extension == 'mp4':
       video_predict(os.path.join(test_folder, f), THRESHOLD)
 
-class ColumnsAction(argparse.Action):
-    def __call__(self, parser, namespace, value, option_string=None):
-        self.validate(parser, value)
-        setattr(namespace, self.dest, value)
-
 
 if __name__ == "__main__":
   
@@ -271,7 +266,7 @@ if __name__ == "__main__":
   # Display a friendly message to the user
   print(f"[INFO] Database path set to {args['database']}")
   print(f'[INFO] Threshold is set at {args["threshold"]}. Enter -t <value> to change')
-  
+
   # Global variables for color and thickness of the rectangles and keypoints that will be drawn on the image
   THRESHOLD = int(args['threshold'])
   COLOR = (0, 255, 0)
