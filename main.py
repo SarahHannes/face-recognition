@@ -1,4 +1,6 @@
+import argparse
 import os
+import sys
 import time
 
 from mtcnn import MTCNN
@@ -239,27 +241,61 @@ def media_predict(test_folder, THRESHOLD):
     if extension == 'mp4':
       video_predict(os.path.join(test_folder, f), THRESHOLD)
 
+class ColumnsAction(argparse.Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        self.validate(parser, value)
+        setattr(namespace, self.dest, value)
 
-if __name__ == "main":
+
+if __name__ == "__main__":
   
+  # Take in user input through command line
+  ap = argparse.ArgumentParser()
+  ap.add_argument("-d", "--database", required=True,
+      help="folder path to training directory of faces")
+  ap.add_argument("-t", "--threshold", default=10,
+      help="set distance threshold")
+  ap.add_argument("-m", "--media",
+      help="folder path for face verification through media imports")
+  ap.add_argument("-c", "--webcam", action='store_true',
+      help="command for face verification through webcam")
+
+  args = vars(ap.parse_args())
+
   # Set paths
   weight_path = 'facenet_keras_weights.h5'
-  face_database_path = 'database'
-  test_folder = 'test'
+  face_database_path = args["database"]
+  test_folder = args["media"]
+  webcam = args['webcam'] # boolean: True if user input --webcam, False otherwise
 
+  # Display a friendly message to the user
+  print(f"[INFO] Database path set to {args['database']}")
+  print(f'[INFO] Threshold is set at {args["threshold"]}. Enter -t <value> to change')
+  
   # Global variables for color and thickness of the rectangles and keypoints that will be drawn on the image
-  THRESHOLD = 10
+  THRESHOLD = int(args['threshold'])
   COLOR = (0, 255, 0)
   THICKNESS = 2
 
   # Initialize model and load weights
+  print("[INFO] Setting up model...")
   face_detector = MTCNN()
   model = InceptionResNetV2()
   model.load_weights(weight_path)
 
+  print("[INFO] Quantifying faces...")
+  if (not webcam) and (not test_folder):
+    print('[INFO] No input method is specified.\nEnter --webcam to capture through webcam.\nEnter --media <path> to import folder containing media.\nEnter --help to view options.')
+
   # Capture from webcam and predict
-  webcam_predict(THRESHOLD)
+  if webcam:
+    print("[INFO] Please standy. Capturing through webcam...")
+    print('[INFO] Press `q` to exit.')
+    webcam_predict(THRESHOLD)
 
   # Predict from test folder
-  media_predict(test_folder, THRESHOLD)
+  if test_folder is not None:
+    print(f'[INFO] Detecting faces in {test_folder}...')
+    print('[INFO] Press any key to move to the next image. Close window to exit.')
+    media_predict(test_folder, THRESHOLD)
 
