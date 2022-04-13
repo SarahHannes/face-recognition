@@ -7,7 +7,7 @@ One shot learning using FaceNet and MTCNN.
 `!git clone https://github.com/SarahHannes/face-recognition.git`
 
 ### Step 2: Add training images to `/database` folder
-### Step 3: Create a new environment using <a href="requirement.txt">`requirement.txt`</a> or <a href="face_recog38.yml">`face_recog38.yml`</a>
+### Step 3: Create a new environment using <a href="requirements.txt">`requirements.txt`</a> or <a href="face_recog38.yml">`face_recog38.yml`</a>
 ### Step 4: Activate the created environment on anaconda prompt
 `conda activate <environment name>`
 ### Step 5: Change directory to cloned folder on anaconda prompt
